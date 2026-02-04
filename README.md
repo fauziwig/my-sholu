@@ -154,9 +154,6 @@ Proyek ini dilisensikan di bawah [MIT License](LICENSE).
 - Audio adzan Al-Aqsa
 - Icon oleh GTK3 default theme
 
-## 👤 Author
-
-**Fauziwig** - [GitHub](https://github.com/username)
 
 ---
 
