@@ -1,0 +1,14 @@
+#!/bin/bash
+# Launcher script untuk MySholu
+# Menggunakan virtual environment
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Activate virtual environment if exists
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+fi
+
+# Run application
+python3 src/panel_jadwal.py
