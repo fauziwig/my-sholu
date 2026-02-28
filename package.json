@@ -1,0 +1,56 @@
+{
+  "name": "mysholu",
+  "version": "1.0.0",
+  "description": "MySholu - Prayer Schedule Desktop App for Linux",
+  "main": "./apps/desktop/src/main/index.js",
+  "scripts": {
+    "start": "electron . --disable-gpu",
+    "build": "electron-builder",
+    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
+    "dev:renderer": "cd src && npm start",
+    "dev:main": "electron-builder --dir"
+  },
+  "keywords": [
+    "prayer",
+    "islam",
+    "schedule",
+    "desktop",
+    "electron"
+  ],
+  "author": "MySholu Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0",
+    "concurrently": "^8.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.0.0",
+    "node-fetch": "^3.3.0"
+  },
+  "build": {
+    "appId": "com.mysholu.desktop",
+    "productName": "MySholu",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "apps/desktop/src/main/**/*",
+      "apps/desktop/src/preload/**/*",
+      "apps/desktop/src/renderer/**/*",
+      "apps/assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "apps/assets",
+        "to": "assets"
+      }
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility",
+      "icon": "apps/assets/icon.png"
+    }
+  }
+}

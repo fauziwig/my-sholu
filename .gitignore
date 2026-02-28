@@ -50,3 +50,10 @@ logs/
 
 # file run.sh 
 run.sh
+
+# Kiro and Agent Skill
+kiro/
+agent-skill-vercel/
+
+# Node Modules
+node_modules/
