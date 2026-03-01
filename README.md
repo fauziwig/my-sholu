@@ -1,5 +1,6 @@
 # 🕌 MySholu Desktop (Electron)
 
+![Preview MySholu](apps/assets/Preview%20MySholu.png)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-green.svg)](#)
 [![Electron](https://img.shields.io/badge/electron-28.0-blue.svg)](#)
