@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } = r
 const path = require('path');
 const fs = require('fs');
 const prayerService = require('./prayerService');
+const { showCustomNotification, setAdzanProcess } = require('./customNotification');
 
 let mainWindow = null;
 let tray = null;
@@ -150,12 +151,25 @@ ipcMain.handle('load-prayer-data', async () => {
 });
 
 ipcMain.handle('show-notification', async (event, { title, body }) => {
-  if (Notification.isSupported()) {
-    const notification = new Notification({ title, body });
-    notification.show();
-    return { success: true };
+  // Use custom notification instead of system notification
+  showCustomNotification(title, body);
+  
+  // Play adzan sound
+  const adzanPath = !app.isPackaged
+    ? path.join(__dirname, '../../../../apps/assets/sound_adzan_alaqsa2_64_22.mp3')
+    : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
+  
+  if (fs.existsSync(adzanPath)) {
+    const { spawn } = require('child_process');
+    const process = spawn('mpg123', ['-q', adzanPath]);
+    setAdzanProcess(process);
+    
+    process.on('error', (error) => {
+      console.error('[Notification] Error playing adzan:', error);
+    });
   }
-  return { success: false, error: 'Notifications not supported' };
+  
+  return { success: true };
 });
 
 ipcMain.handle('refresh-data', async () => {
@@ -168,7 +182,25 @@ app.on('ready', () => {
   prayerService.loadPrayerData();
   createMainWindow();
   createTray();
-  prayerService.startPrayerChecker(mainWindow);
+  
+  // Start prayer checker with notification callback
+  prayerService.startPrayerChecker((prayerName, time) => {
+    showCustomNotification(
+      `Waktu Sholat ${prayerName}`,
+      `Telah masuk waktu sholat ${prayerName} pada ${time}`
+    );
+    
+    // Play adzan
+    const adzanPath = !app.isPackaged
+      ? path.join(__dirname, '../../../../apps/assets/sound_adzan_alaqsa2_64_22.mp3')
+      : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
+    
+    if (fs.existsSync(adzanPath)) {
+      const { spawn } = require('child_process');
+      const process = spawn('mpg123', ['-q', adzanPath]);
+      setAdzanProcess(process);
+    }
+  });
   
   setInterval(() => {
     updateTrayMenu();

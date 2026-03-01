@@ -46,6 +46,10 @@ function loadPrayerData() {
             });
         }
         
+        console.log('[loadPrayerData] Total dates loaded:', Object.keys(prayerData).length);
+        console.log('[loadPrayerData] Sample dates:', Object.keys(prayerData).slice(0, 3));
+        console.log('[loadPrayerData] Last dates:', Object.keys(prayerData).slice(-3));
+        
         return getTodayData();
     } catch (error) {
         console.error('Error loading prayer data:', error);
@@ -74,8 +78,33 @@ function parseDateString(dateStr) {
 }
 
 function getTodayData() {
-    const today = new Date().toISOString().split('T')[0];
-    return prayerData[today] || null;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    console.log('System - Local : ',today, '- Type : ', (typeof today));
+    console.log('prayerData : ',prayerData[today]);
+    console.log('formattedData : ',today);
+    console.log('path : ', String(path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3')));
+    
+    const mypath = path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3');
+    console.log('typeof path : ',typeof(mypath));
+
+        
+    const result = prayerData[today] || null;
+    console.log('[Result] Found data:', result ? 'YES' : 'NO');
+    if (result) console.log('[Result] Data:', result);
+    console.log('========================');
+    
+    return result;
+}
+
+
+function getIniCobaPath(){
+    const mypath = path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3');
+    console.log('typeof path : ',typeof(mypath));
 }
 
 function getNextPrayer(todayData) {
@@ -102,52 +131,41 @@ function getNextPrayer(todayData) {
     return null;
 }
 
-function checkPrayerTime(mainWindow) {
+function checkPrayerTime(notificationCallback) {
     const todayData = getTodayData();
     if (!todayData) return;
     
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const currentDate = now.toISOString().split('T')[0];
+    const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
-    const prayers = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+    const prayers = ['imsak', 'subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
     
     for (const prayer of prayers) {
         if (todayData[prayer] === currentTime && lastTriggered[prayer] !== currentDate) {
             lastTriggered[prayer] = currentDate;
             
-            if (mainWindow) {
-                mainWindow.webContents.send('prayer-time', { 
-                    name: prayer.charAt(0).toUpperCase() + prayer.slice(1),
-                    time: currentTime 
-                });
+            console.log(`[Prayer Time] ${prayer} at ${currentTime}`);
+            
+            // Call notification callback
+            if (notificationCallback) {
+                notificationCallback(prayer.charAt(0).toUpperCase() + prayer.slice(1), currentTime);
             }
             
-            playAdzan();
             break;
         }
     }
 }
 
 function playAdzan() {
-    const isDev = !require('electron').app.isPackaged;
-    const adzanPath = isDev
-        ? path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3')
-        : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
-    
-    if (fs.existsSync(adzanPath)) {
-        const { exec } = require('child_process');
-        exec(`mpg123 -q "${adzanPath}"`, (error) => {
-            if (error) console.error('Error playing adzan:', error);
-        });
-    }
+    // Removed - adzan is now played by notification handler
 }
 
-function startPrayerChecker(mainWindow) {
+function startPrayerChecker(notificationCallback) {
     if (checkInterval) clearInterval(checkInterval);
     
     checkInterval = setInterval(() => {
-        checkPrayerTime(mainWindow);
+        checkPrayerTime(notificationCallback);
     }, 30000); // Check every 30 seconds
 }
 

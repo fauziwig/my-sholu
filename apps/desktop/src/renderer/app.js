@@ -7,6 +7,7 @@ async function loadData() {
         const response = await window.electronAPI.loadPrayerData();
         prayerData = response.todayData;
         metadata = response.metadata;
+        updateSystemDate();
         updateUI();
         updateMetadata();
         startCountdown();
@@ -15,14 +16,24 @@ async function loadData() {
     }
 }
 
+function updateSystemDate() {
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = now.toLocaleDateString('id-ID', options);
+    document.getElementById('systemDate').textContent = dateStr;
+}
+
 function getTodayData() {
     return prayerData;
 }
 
 function updateUI() {
-    if (!prayerData) return;
+    if (!prayerData) {
+        document.getElementById('date').textContent = 'Data tidak tersedia untuk hari ini';
+        return;
+    }
     
-    document.getElementById('date').textContent = prayerData.tanggal || '';
+    document.getElementById('date').textContent = '';
     
     const prayers = ['imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya'];
     const items = document.querySelectorAll('.prayer-item');
@@ -133,7 +144,7 @@ window.electronAPI.onRefreshData(() => {
 });
 
 window.electronAPI.onPrayerTime((data) => {
-    showPrayerNotification(data.name, data.time);
+    // Only system notification, no in-app popup
 });
 
 window.addEventListener('DOMContentLoaded', () => {
