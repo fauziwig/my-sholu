@@ -186,6 +186,40 @@ function stopPrayerChecker() {
     }
 }
 
+function checkMissedPrayers(notificationCallback) {
+    const todayData = getTodayData();
+    if (!todayData) return;
+    
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    const prayers = ['imsak', 'subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+    
+    console.log('[checkMissedPrayers] Checking for missed prayers after wake...');
+    
+    for (const prayer of prayers) {
+        const prayerTime = todayData[prayer];
+        if (!prayerTime) continue;
+        
+        // Check if prayer time has passed and not yet triggered today
+        if (prayerTime < currentTime && lastTriggered[prayer] !== currentDate) {
+            console.log(`[checkMissedPrayers] Found missed prayer: ${prayer} at ${prayerTime}`);
+            lastTriggered[prayer] = currentDate;
+            
+            if (notificationCallback) {
+                notificationCallback(
+                    prayer.charAt(0).toUpperCase() + prayer.slice(1), 
+                    prayerTime
+                );
+            }
+            
+            // Only notify the most recent missed prayer
+            break;
+        }
+    }
+}
+
 module.exports = {
     loadPrayerData,
     getTodayData,
@@ -193,4 +227,5 @@ module.exports = {
     getMetadata: () => metadata,
     startPrayerChecker,
     stopPrayerChecker,
+    checkMissedPrayers,
 };

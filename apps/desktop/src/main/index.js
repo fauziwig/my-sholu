@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const prayerService = require('./prayerService');
@@ -135,6 +135,10 @@ function updateTrayMenu() {
     {
       label: 'Quit',
       click: () => {
+        app.isQuitting = true;
+        if (tray) {
+          tray.destroy();
+        }
         app.quit();
       },
     }
@@ -184,7 +188,7 @@ app.on('ready', () => {
   createTray();
   
   // Start prayer checker with notification callback
-  prayerService.startPrayerChecker((prayerName, time) => {
+  const notifyPrayer = (prayerName, time) => {
     showCustomNotification(
       `Waktu Sholat ${prayerName}`,
       `Telah masuk waktu sholat ${prayerName} pada ${time}`
@@ -200,6 +204,19 @@ app.on('ready', () => {
       const process = spawn('mpg123', ['-q', adzanPath]);
       setAdzanProcess(process);
     }
+  };
+  
+  prayerService.startPrayerChecker(notifyPrayer);
+  
+  // Detect when laptop wakes from sleep
+  powerMonitor.on('resume', () => {
+    console.log('[PowerMonitor] Laptop woke up, checking for missed prayers...');
+    prayerService.checkMissedPrayers(notifyPrayer);
+  });
+  
+  // Prevent sleep during prayer time notification (optional)
+  powerMonitor.on('suspend', () => {
+    console.log('[PowerMonitor] Laptop going to sleep...');
   });
   
   setInterval(() => {
@@ -219,6 +236,9 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   prayerService.stopPrayerChecker();
+  if (tray) {
+    tray.destroy();
+  }
 });
 
 module.exports = {
