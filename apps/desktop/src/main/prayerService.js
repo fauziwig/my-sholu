@@ -133,23 +133,33 @@ function getNextPrayer(todayData) {
 
 function checkPrayerTime(notificationCallback) {
     const todayData = getTodayData();
-    if (!todayData) return;
+    if (!todayData) {
+        console.log('[checkPrayerTime] No data for today');
+        return;
+    }
     
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
+    console.log(`[checkPrayerTime] Current time: ${currentTime}, Date: ${currentDate}`);
+    
     const prayers = ['imsak', 'subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
     
     for (const prayer of prayers) {
-        if (todayData[prayer] === currentTime && lastTriggered[prayer] !== currentDate) {
+        const prayerTime = todayData[prayer];
+        console.log(`[checkPrayerTime] ${prayer}: ${prayerTime}, Match: ${prayerTime === currentTime}, Already triggered: ${lastTriggered[prayer] === currentDate}`);
+        
+        if (prayerTime === currentTime && lastTriggered[prayer] !== currentDate) {
             lastTriggered[prayer] = currentDate;
             
-            console.log(`[Prayer Time] ${prayer} at ${currentTime}`);
+            console.log(`[Prayer Time] ✅ TRIGGERED: ${prayer} at ${currentTime}`);
             
             // Call notification callback
             if (notificationCallback) {
                 notificationCallback(prayer.charAt(0).toUpperCase() + prayer.slice(1), currentTime);
+            } else {
+                console.error('[Prayer Time] ❌ No notification callback!');
             }
             
             break;

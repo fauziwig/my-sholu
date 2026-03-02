@@ -40,12 +40,7 @@ function showCustomNotification(title, body) {
     notificationWindow = null;
   });
 
-  // Auto-close after 10 seconds
-  setTimeout(() => {
-    if (notificationWindow) {
-      notificationWindow.close();
-    }
-  }, 10000);
+  // No auto-close - user must click Tutup button
 }
 
 function setAdzanProcess(process) {
