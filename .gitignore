@@ -48,8 +48,8 @@ logs/
 # Local data (optional - uncomment if you don't want to commit prayer data)
 # assets/jadwal.json
 
-# file run.sh 
-run.sh
+# file script copy file .AppImage to ~/Applications
+afterBuildScript.sh
 
 # Kiro and Agent Skill
 kiro/
