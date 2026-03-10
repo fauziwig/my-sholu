@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { fetchLocationData } = require('./locationService');
 
 let prayerData = {};
 let metadata = {};
@@ -101,10 +102,18 @@ function getTodayData() {
     return result;
 }
 
+async function getCobaLocation(){
+    try {
+        console.log('--- Mencoba Mendapatkan Lokasi ---');
+        const location = await fetchLocationData();
+        console.log('Location Service Result:', location);
+        console.log('Kota:', location.city, '| Koordinat:', location.latitude, location.longitude);
 
-function getIniCobaPath(){
-    const mypath = path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3');
-    console.log('typeof path : ',typeof(mypath));
+        return location.city;
+    } catch (error) {
+        console.error('Gagal mendapatkan lokasi di getTodayData:', error.message);
+    }
+    
 }
 
 function getNextPrayer(todayData) {
@@ -131,51 +140,52 @@ function getNextPrayer(todayData) {
     return null;
 }
 
-function checkPrayerTime(notificationCallback) {
+function checkPrayerTime(mainWindow) {
     const todayData = getTodayData();
-    if (!todayData) {
-        console.log('[checkPrayerTime] No data for today');
-        return;
-    }
+    if (!todayData) return;
     
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentDate = now.toISOString().split('T')[0];
     
-    console.log(`[checkPrayerTime] Current time: ${currentTime}, Date: ${currentDate}`);
-    
-    const prayers = ['imsak', 'subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+    const prayers = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
     
     for (const prayer of prayers) {
-        const prayerTime = todayData[prayer];
-        console.log(`[checkPrayerTime] ${prayer}: ${prayerTime}, Match: ${prayerTime === currentTime}, Already triggered: ${lastTriggered[prayer] === currentDate}`);
-        
-        if (prayerTime === currentTime && lastTriggered[prayer] !== currentDate) {
+        if (todayData[prayer] === currentTime && lastTriggered[prayer] !== currentDate) {
             lastTriggered[prayer] = currentDate;
             
-            console.log(`[Prayer Time] ✅ TRIGGERED: ${prayer} at ${currentTime}`);
-            
-            // Call notification callback
-            if (notificationCallback) {
-                notificationCallback(prayer.charAt(0).toUpperCase() + prayer.slice(1), currentTime);
-            } else {
-                console.error('[Prayer Time] ❌ No notification callback!');
+            if (mainWindow) {
+                mainWindow.webContents.send('prayer-time', { 
+                    name: prayer.charAt(0).toUpperCase() + prayer.slice(1),
+                    time: currentTime 
+                });
             }
             
+            playAdzan();
             break;
         }
     }
 }
 
 function playAdzan() {
-    // Removed - adzan is now played by notification handler
+    const isDev = !require('electron').app.isPackaged;
+    const adzanPath = isDev
+        ? path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3')
+        : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
+    
+    if (fs.existsSync(adzanPath)) {
+        const { exec } = require('child_process');
+        exec(`mpg123 -q "${adzanPath}"`, (error) => {
+            if (error) console.error('Error playing adzan:', error);
+        });
+    }
 }
 
-function startPrayerChecker(notificationCallback) {
+function startPrayerChecker(mainWindow) {
     if (checkInterval) clearInterval(checkInterval);
     
     checkInterval = setInterval(() => {
-        checkPrayerTime(notificationCallback);
+        checkPrayerTime(mainWindow);
     }, 30000); // Check every 30 seconds
 }
 
@@ -186,40 +196,6 @@ function stopPrayerChecker() {
     }
 }
 
-function checkMissedPrayers(notificationCallback) {
-    const todayData = getTodayData();
-    if (!todayData) return;
-    
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const currentDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
-    const prayers = ['imsak', 'subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
-    
-    console.log('[checkMissedPrayers] Checking for missed prayers after wake...');
-    
-    for (const prayer of prayers) {
-        const prayerTime = todayData[prayer];
-        if (!prayerTime) continue;
-        
-        // Check if prayer time has passed and not yet triggered today
-        if (prayerTime < currentTime && lastTriggered[prayer] !== currentDate) {
-            console.log(`[checkMissedPrayers] Found missed prayer: ${prayer} at ${prayerTime}`);
-            lastTriggered[prayer] = currentDate;
-            
-            if (notificationCallback) {
-                notificationCallback(
-                    prayer.charAt(0).toUpperCase() + prayer.slice(1), 
-                    prayerTime
-                );
-            }
-            
-            // Only notify the most recent missed prayer
-            break;
-        }
-    }
-}
-
 module.exports = {
     loadPrayerData,
     getTodayData,
@@ -227,5 +203,4 @@ module.exports = {
     getMetadata: () => metadata,
     startPrayerChecker,
     stopPrayerChecker,
-    checkMissedPrayers,
 };

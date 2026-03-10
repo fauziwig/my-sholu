@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   refreshData: () => ipcRenderer.invoke('refresh-data'),
   onRefreshData: (callback) => ipcRenderer.on('refresh-data', callback),
   onPrayerTime: (callback) => ipcRenderer.on('prayer-time', (event, data) => callback(data)),
+  getAutoLocation: () => ipcRenderer.invoke('get-auto-location'),
 });

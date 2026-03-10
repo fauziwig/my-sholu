@@ -11,6 +11,7 @@
         .header { text-align: center; padding: 20px; background: #2c3e50; color: white; }
         .header h1 { font-size: 24px; margin-bottom: 5px; }
         .date { font-size: 14px; opacity: 0.9; }
+        .location { font-size: 14px; opacity: 0.9; }
         .countdown { background: #3498db; color: white; padding: 15px; text-align: center; margin: 20px 0; border-radius: 8px; }
         .prayer-list { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .prayer-item { display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #ecf0f1; }
@@ -26,6 +27,7 @@
 <body>
     <div class="header">
         <h1>🕌 MySholu</h1>
+        <div class="location" id="currentLocation">Ini lokasi saya</div>
         <div class="date" id="systemDate">Loading...</div>
         <div class="date" id="date" style="font-size: 12px; opacity: 0.8;"></div>
     </div>

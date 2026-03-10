@@ -8,6 +8,7 @@ async function loadData() {
         prayerData = response.todayData;
         metadata = response.metadata;
         updateSystemDate();
+        updateCurrentLocation();
         updateUI();
         updateMetadata();
         startCountdown();
@@ -21,6 +22,17 @@ function updateSystemDate() {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dateStr = now.toLocaleDateString('id-ID', options);
     document.getElementById('systemDate').textContent = dateStr;
+}
+
+async function updateCurrentLocation() {
+    const result = await window.electronAPI.getAutoLocation();
+    
+    if (result.success) {
+        const loc = result.data;
+        document.getElementById('currentLocation').textContent = `📍 ${loc.city}, ${loc.region}`;
+    } else {
+        document.getElementById('currentLocation').textContent = '📍 Lokasi tidak terdeteksi';
+    }
 }
 
 function getTodayData() {

@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const prayerService = require('./prayerService');
 const { showCustomNotification, setAdzanProcess } = require('./customNotification');
+const { fetchLocationData } = require('./locationService');
 
 let mainWindow = null;
 let tray = null;
@@ -180,6 +181,15 @@ ipcMain.handle('refresh-data', async () => {
   prayerService.loadPrayerData();
   updateTrayMenu();
   return { success: true };
+});
+
+ipcMain.handle('get-auto-location', async () => {
+  try {
+    const location = await fetchLocationData();
+    return { success: true, data: location };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 });
 
 app.on('ready', () => {

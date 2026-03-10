@@ -46,7 +46,7 @@ Thumbs.db
 logs/
 
 # Local data (optional - uncomment if you don't want to commit prayer data)
-# assets/jadwal_imsakiyah.json
+# assets/jadwal.json
 
 # file run.sh 
 run.sh
@@ -57,6 +57,3 @@ agent-skill-vercel/
 
 # Node Modules
 node_modules/
-
-# Development Directory 
-DEVELOPMENT.md 
