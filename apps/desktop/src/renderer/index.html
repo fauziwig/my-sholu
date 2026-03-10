@@ -9,7 +9,8 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
         .container { padding: 20px; }
         .header { text-align: center; padding: 20px; background: #2c3e50; color: white; }
-        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header h1 { font-size: 24px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header h1 img { width: 32px; height: 32px; }
         .date { font-size: 14px; opacity: 0.9; }
         .location { font-size: 14px; opacity: 0.9; }
         .countdown { background: #3498db; color: white; padding: 15px; text-align: center; margin: 20px 0; border-radius: 8px; }
@@ -26,9 +27,9 @@
 </head>
 <body>
     <div class="header">
-        <h1>🕌 MySholu</h1>
-        <div class="location" id="currentLocation">Ini lokasi saya</div>
-        <div class="date" id="systemDate">Loading...</div>
+        <h1><img src="../../../../apps/assets/icon.png" alt="MySholu Icon">MySholu</h1>
+        <div class="location" id="currentLocation">Sedang mengambil data lokasi ...</div>
+        <div class="date" id="systemDate">Sedang mengambil data tanggal...</div>
         <div class="date" id="date" style="font-size: 12px; opacity: 0.8;"></div>
     </div>
     

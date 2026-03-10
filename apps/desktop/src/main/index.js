@@ -124,8 +124,8 @@ function updateTrayMenu() {
     },
     {
       label: 'Refresh Data',
-      click: () => {
-        prayerService.loadPrayerData();
+      click: async () => {
+        await prayerService.loadPrayerData();
         updateTrayMenu();
         if (mainWindow) {
           mainWindow.webContents.send('refresh-data');
@@ -178,7 +178,7 @@ ipcMain.handle('show-notification', async (event, { title, body }) => {
 });
 
 ipcMain.handle('refresh-data', async () => {
-  prayerService.loadPrayerData();
+  await prayerService.loadPrayerData();
   updateTrayMenu();
   return { success: true };
 });
@@ -192,8 +192,8 @@ ipcMain.handle('get-auto-location', async () => {
   }
 });
 
-app.on('ready', () => {
-  prayerService.loadPrayerData();
+app.on('ready', async () => {
+  await prayerService.loadPrayerData();
   createMainWindow();
   createTray();
   

@@ -1,21 +1,20 @@
 const fs = require('fs');
 const path = require('path');
-const { fetchLocationData } = require('./locationService');
+const { loadJsonFile } = require('./dataService');
 
 let prayerData = {};
 let metadata = {};
 let checkInterval = null;
 let lastTriggered = {};
 
-function loadPrayerData() {
+async function loadPrayerData() {
     const isDev = !require('electron').app.isPackaged;
     const jsonPath = isDev 
         ? path.join(__dirname, '../../../assets/jadwal_imsakiyah.json')
         : path.join(process.resourcesPath, 'assets/jadwal_imsakiyah.json');
     
     try {
-        const data = fs.readFileSync(jsonPath, 'utf8');
-        const parsed = JSON.parse(data);
+        const parsed = await loadJsonFile(jsonPath);
         
         // Store metadata
         metadata = {
@@ -48,8 +47,6 @@ function loadPrayerData() {
         }
         
         console.log('[loadPrayerData] Total dates loaded:', Object.keys(prayerData).length);
-        console.log('[loadPrayerData] Sample dates:', Object.keys(prayerData).slice(0, 3));
-        console.log('[loadPrayerData] Last dates:', Object.keys(prayerData).slice(-3));
         
         return getTodayData();
     } catch (error) {
@@ -102,19 +99,19 @@ function getTodayData() {
     return result;
 }
 
-async function getCobaLocation(){
-    try {
-        console.log('--- Mencoba Mendapatkan Lokasi ---');
-        const location = await fetchLocationData();
-        console.log('Location Service Result:', location);
-        console.log('Kota:', location.city, '| Koordinat:', location.latitude, location.longitude);
-
-        return location.city;
-    } catch (error) {
-        console.error('Gagal mendapatkan lokasi di getTodayData:', error.message);
-    }
-    
-}
+//async function getCobaLocation(){
+//    try {
+//        console.log('--- Mencoba Mendapatkan Lokasi ---');
+//        const location = await fetchLocationData();
+//        console.log('Location Service Result:', location);
+//        console.log('Kota:', location.city, '| Koordinat:', location.latitude, location.longitude);
+//
+//        return location.city;
+//    } catch (error) {
+//        console.error('Gagal mendapatkan lokasi di getTodayData:', error.message);
+//    }
+//    
+//}
 
 function getNextPrayer(todayData) {
     if (!todayData) return null;
