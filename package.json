@@ -1,6 +1,6 @@
 {
   "name": "mysholu",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MySholu - Prayer Schedule Desktop App for Linux",
   "main": "./apps/desktop/src/main/index.js",
   "scripts": {

@@ -1,203 +1,105 @@
-const fs = require('fs');
-const path = require('path');
-const { loadJsonFile } = require('./dataService');
+const { fetchLocationData, fetchPrayerSchedule } = require('./locationService');
 
-let prayerData = {};
-let metadata = {};
+let prayerData = null;
+let locationData = null;
 let checkInterval = null;
 let lastTriggered = {};
 
 async function loadPrayerData() {
-    const isDev = !require('electron').app.isPackaged;
-    const jsonPath = isDev 
-        ? path.join(__dirname, '../../../assets/jadwal_imsakiyah.json')
-        : path.join(process.resourcesPath, 'assets/jadwal_imsakiyah.json');
-    
-    try {
-        const parsed = await loadJsonFile(jsonPath);
-        
-        // Store metadata
-        metadata = {
-            title: parsed.title || '',
-            location: parsed.location || '',
-            organization: parsed.organization || '',
-            calculated_by: parsed.calculated_by || ''
-        };
-        
-        // Convert array format to date-keyed object
-        prayerData = {};
-        if (parsed.schedule && Array.isArray(parsed.schedule)) {
-            parsed.schedule.forEach(item => {
-                const dateStr = item.calendar_date;
-                const date = parseDateString(dateStr);
-                if (date) {
-                    prayerData[date] = {
-                        tanggal: item.calendar_date,
-                        imsak: item.imsak,
-                        subuh: item.subuh,
-                        terbit: item.terbit,
-                        dhuha: item.duha,
-                        dzuhur: item.zuhur,
-                        ashar: item.ashar,
-                        maghrib: item.maghrib,
-                        isya: item.isya
-                    };
-                }
-            });
-        }
-        
-        console.log('[loadPrayerData] Total dates loaded:', Object.keys(prayerData).length);
-        
-        return getTodayData();
-    } catch (error) {
-        console.error('Error loading prayer data:', error);
-        return null;
-    }
+  try {
+    const location = await fetchLocationData();
+    locationData = location;
+    prayerData = await fetchPrayerSchedule(location.city, location.timezone);
+    console.log('[loadPrayerData] Loaded from myquran:', prayerData.kota);
+    console.log('time: ',prayerData)
+    return { location: locationData, schedule: prayerData };
+  } catch (error) {
+    console.error('Error loading prayer data:', error);
+    return null;
+  }
 }
 
-function parseDateString(dateStr) {
-    // Convert "18 Februari 2026" to "2026-02-18"
-    const months = {
-        'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04',
-        'Mei': '05', 'Juni': '06', 'Juli': '07', 'Agustus': '08',
-        'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
-    };
-    
-    const parts = dateStr.split(' ');
-    if (parts.length === 3) {
-        const day = parts[0].padStart(2, '0');
-        const month = months[parts[1]];
-        const year = parts[2];
-        if (month) {
-            return `${year}-${month}-${day}`;
-        }
-    }
-    return null;
+function getLocationData() {
+  return locationData;
 }
 
 function getTodayData() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
-    
-    console.log('System - Local : ',today, '- Type : ', (typeof today));
-    console.log('prayerData : ',prayerData[today]);
-    console.log('formattedData : ',today);
-    console.log('path : ', String(path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3')));
-    
-    const mypath = path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3');
-    console.log('typeof path : ',typeof(mypath));
-
-        
-    const result = prayerData[today] || null;
-    console.log('[Result] Found data:', result ? 'YES' : 'NO');
-    if (result) console.log('[Result] Data:', result);
-    console.log('========================');
-    
-    return result;
+  return prayerData;
 }
 
-//async function getCobaLocation(){
-//    try {
-//        console.log('--- Mencoba Mendapatkan Lokasi ---');
-//        const location = await fetchLocationData();
-//        console.log('Location Service Result:', location);
-//        console.log('Kota:', location.city, '| Koordinat:', location.latitude, location.longitude);
-//
-//        return location.city;
-//    } catch (error) {
-//        console.error('Gagal mendapatkan lokasi di getTodayData:', error.message);
-//    }
-//    
-//}
+function getMetadata() {
+  return {
+    title: 'Jadwal Sholat Hari Ini',
+    location: prayerData ? prayerData.kota : '',
+    organization: '',
+    calculated_by: 'api.myquran.com',
+  };
+}
 
 function getNextPrayer(todayData) {
-    if (!todayData) return null;
-    
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    const prayers = ['imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya'];
-    
-    for (const prayer of prayers) {
-        if (todayData[prayer] && todayData[prayer] > currentTime) {
-            const [hour, minute] = todayData[prayer].split(':').map(Number);
-            const prayerTime = new Date();
-            prayerTime.setHours(hour, minute, 0, 0);
-            
-            const diff = prayerTime - now;
-            const minutes = Math.floor(diff / 60000);
-            
-            return { name: prayer, minutes, time: todayData[prayer] };
-        }
+  if (!todayData) return null;
+
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const prayers = ['imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+
+  for (const prayer of prayers) {
+    if (todayData[prayer] && todayData[prayer] > currentTime) {
+      const [hour, minute] = todayData[prayer].split(':').map(Number);
+      const prayerTime = new Date();
+      prayerTime.setHours(hour, minute, 0, 0);
+
+      const diff = prayerTime - now;
+      const minutes = Math.floor(diff / 60000);
+
+      return { name: prayer, minutes, time: todayData[prayer] };
     }
-    
-    return null;
+  }
+
+  return null;
 }
 
-function checkPrayerTime(mainWindow) {
-    const todayData = getTodayData();
-    if (!todayData) return;
-    
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const currentDate = now.toISOString().split('T')[0];
-    
-    const prayers = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
-    
-    for (const prayer of prayers) {
-        if (todayData[prayer] === currentTime && lastTriggered[prayer] !== currentDate) {
-            lastTriggered[prayer] = currentDate;
-            
-            if (mainWindow) {
-                mainWindow.webContents.send('prayer-time', { 
-                    name: prayer.charAt(0).toUpperCase() + prayer.slice(1),
-                    time: currentTime 
-                });
-            }
-            
-            playAdzan();
-            break;
-        }
+function checkPrayerTime(notifyCallback) {
+  if (!prayerData) return;
+
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const currentDate = now.toISOString().split('T')[0];
+
+  const prayers = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+
+  for (const prayer of prayers) {
+    if (prayerData[prayer] === currentTime && lastTriggered[prayer] !== currentDate) {
+      lastTriggered[prayer] = currentDate;
+      if (notifyCallback) {
+        notifyCallback(prayer.charAt(0).toUpperCase() + prayer.slice(1), currentTime);
+      }
+      break;
     }
+  }
 }
 
-function playAdzan() {
-    const isDev = !require('electron').app.isPackaged;
-    const adzanPath = isDev
-        ? path.join(__dirname, '../../../assets/sound_adzan_alaqsa2_64_22.mp3')
-        : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
-    
-    if (fs.existsSync(adzanPath)) {
-        const { exec } = require('child_process');
-        exec(`mpg123 -q "${adzanPath}"`, (error) => {
-            if (error) console.error('Error playing adzan:', error);
-        });
-    }
-}
-
-function startPrayerChecker(mainWindow) {
-    if (checkInterval) clearInterval(checkInterval);
-    
-    checkInterval = setInterval(() => {
-        checkPrayerTime(mainWindow);
-    }, 30000); // Check every 30 seconds
+function startPrayerChecker(notifyCallback) {
+  if (checkInterval) clearInterval(checkInterval);
+  checkInterval = setInterval(() => {
+    checkPrayerTime(notifyCallback);
+  }, 30000);
 }
 
 function stopPrayerChecker() {
-    if (checkInterval) {
-        clearInterval(checkInterval);
-        checkInterval = null;
-    }
+  if (checkInterval) {
+    clearInterval(checkInterval);
+    checkInterval = null;
+  }
 }
 
 module.exports = {
-    loadPrayerData,
-    getTodayData,
-    getNextPrayer,
-    getMetadata: () => metadata,
-    startPrayerChecker,
-    stopPrayerChecker,
+  loadPrayerData,
+  getTodayData,
+  getLocationData,
+  getNextPrayer,
+  getMetadata,
+  startPrayerChecker,
+  stopPrayerChecker,
 };

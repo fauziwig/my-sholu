@@ -51,9 +51,13 @@ logs/
 # file script copy file .AppImage to ~/Applications
 afterBuildScript.sh
 
-# Kiro and Agent Skill
+# DEVELOPMENT TOOL
 kiro/
 agent-skill-vercel/
+.codex
+AGENTS.md
+DEVELOPMENT.md
+ELECTRON_IMPLEMENTATION.md
 
 # Node Modules
 node_modules/

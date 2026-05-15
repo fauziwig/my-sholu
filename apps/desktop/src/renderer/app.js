@@ -1,17 +1,10 @@
 let prayerData = null;
-let metadata = null;
 let checkInterval = null;
 
 async function loadData() {
     try {
-        const response = await window.electronAPI.loadPrayerData();
-        prayerData = response.todayData;
-        metadata = response.metadata;
         updateSystemDate();
-        updateCurrentLocation();
-        updateUI();
-        updateMetadata();
-        startCountdown();
+        await updateCurrentLocation();
     } catch (error) {
         console.error('Error loading data:', error);
     }
@@ -28,28 +21,26 @@ async function updateCurrentLocation() {
     const result = await window.electronAPI.getAutoLocation();
     
     if (result.success) {
-        const loc = result.data;
-        document.getElementById('currentLocation').textContent = `📍 ${loc.city}, ${loc.region}`;
+        const { location, schedule } = result.data;
+        document.getElementById('currentLocation').textContent = `📍 ${location.city}, ${location.region}`;
+        prayerData = schedule;
+        updateUI();
+        updateMetadata(schedule);
+        startCountdown();
     } else {
         document.getElementById('currentLocation').textContent = '📍 Lokasi tidak terdeteksi';
     }
 }
 
-function getTodayData() {
-    return prayerData;
-}
-
 function updateUI() {
     if (!prayerData) {
-        document.getElementById('date').textContent = 'Data tidak tersedia untuk hari ini';
+        document.getElementById('countdown').textContent = '⏰ Data tidak tersedia';
         return;
     }
-    
-    document.getElementById('date').textContent = '';
-    
+
     const prayers = ['imsak', 'subuh', 'terbit', 'dhuha', 'dzuhur', 'ashar', 'maghrib', 'isya'];
     const items = document.querySelectorAll('.prayer-item');
-    
+
     prayers.forEach((prayer, index) => {
         if (items[index]) {
             const timeEl = items[index].querySelector('.prayer-time');
@@ -58,16 +49,15 @@ function updateUI() {
     });
 }
 
-function updateMetadata() {
-    if (!metadata) return;
-    
+function updateMetadata(schedule) {
+    if (!schedule) return;
+
     const content = `
-        <div><strong>${metadata.title}</strong></div>
-        <div>📍 ${metadata.location}</div>
-        <div>🏢 ${metadata.organization}</div>
-        <div>👤 ${metadata.calculated_by}</div>
+        <div><strong>${schedule.tanggal}</strong></div>
+        <div>📍 ${schedule.kota}, ${schedule.provinsi}</div>
+        <div>👤 api.myquran.com</div>
     `;
-    
+
     document.getElementById('metadataContent').innerHTML = content;
 }
 
@@ -115,40 +105,6 @@ function refreshData() {
 
 function testNotification() {
     window.electronAPI.showNotification('Test Notifikasi', 'Ini adalah test notifikasi dari MySholu');
-}
-
-function showPrayerNotification(name, time) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        z-index: 1000;
-        text-align: center;
-        min-width: 300px;
-    `;
-    
-    notification.innerHTML = `
-        <div style="font-size: 48px; margin-bottom: 15px;">🕌</div>
-        <h2 style="margin: 0 0 10px 0; color: #2c3e50;">Waktu Sholat ${name}</h2>
-        <p style="margin: 0 0 20px 0; color: #7f8c8d;">Telah masuk waktu sholat ${name}<br>Waktu: ${time}</p>
-        <button onclick="this.parentElement.remove()" style="
-            padding: 10px 30px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        ">Tutup</button>
-    `;
-    
-    document.body.appendChild(notification);
 }
 
 window.electronAPI.onRefreshData(() => {

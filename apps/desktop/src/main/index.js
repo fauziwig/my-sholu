@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const prayerService = require('./prayerService');
 const { showCustomNotification, setAdzanProcess } = require('./customNotification');
-const { fetchLocationData } = require('./locationService');
 
 let mainWindow = null;
 let tray = null;
@@ -149,17 +148,9 @@ function updateTrayMenu() {
   tray.setContextMenu(contextMenu);
 }
 
-ipcMain.handle('load-prayer-data', async () => {
-  const todayData = prayerService.getTodayData();
-  const metadata = prayerService.getMetadata();
-  return { todayData: todayData || {}, metadata };
-});
-
 ipcMain.handle('show-notification', async (event, { title, body }) => {
-  // Use custom notification instead of system notification
   showCustomNotification(title, body);
   
-  // Play adzan sound
   const adzanPath = !app.isPackaged
     ? path.join(__dirname, '../../../../apps/assets/sound_adzan_alaqsa2_64_22.mp3')
     : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
@@ -185,26 +176,35 @@ ipcMain.handle('refresh-data', async () => {
 
 ipcMain.handle('get-auto-location', async () => {
   try {
-    const location = await fetchLocationData();
-    return { success: true, data: location };
+    // Reuse data already fetched by prayerService
+    let location = prayerService.getLocationData();
+    let schedule = prayerService.getTodayData();
+
+    if (!location || !schedule) {
+      const result = await prayerService.loadPrayerData();
+      if (!result) throw new Error('Gagal mengambil data jadwal sholat');
+      location = result.location;
+      schedule = result.schedule;
+    }
+
+    return { success: true, data: { location, schedule } };
   } catch (error) {
     return { success: false, message: error.message };
   }
 });
 
 app.on('ready', async () => {
-  await prayerService.loadPrayerData();
   createMainWindow();
   createTray();
+  await prayerService.loadPrayerData();
+  updateTrayMenu();
   
-  // Start prayer checker with notification callback
   const notifyPrayer = (prayerName, time) => {
     showCustomNotification(
       `Waktu Sholat ${prayerName}`,
       `Telah masuk waktu sholat ${prayerName} pada ${time}`
     );
     
-    // Play adzan
     const adzanPath = !app.isPackaged
       ? path.join(__dirname, '../../../../apps/assets/sound_adzan_alaqsa2_64_22.mp3')
       : path.join(process.resourcesPath, 'assets/sound_adzan_alaqsa2_64_22.mp3');
@@ -218,13 +218,12 @@ app.on('ready', async () => {
   
   prayerService.startPrayerChecker(notifyPrayer);
   
-  // Detect when laptop wakes from sleep
-  powerMonitor.on('resume', () => {
-    console.log('[PowerMonitor] Laptop woke up, checking for missed prayers...');
-    prayerService.checkMissedPrayers(notifyPrayer);
+  powerMonitor.on('resume', async () => {
+    console.log('[PowerMonitor] Laptop woke up, refreshing prayer data...');
+    await prayerService.loadPrayerData();
+    updateTrayMenu();
   });
   
-  // Prevent sleep during prayer time notification (optional)
   powerMonitor.on('suspend', () => {
     console.log('[PowerMonitor] Laptop going to sleep...');
   });
