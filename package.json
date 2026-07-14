@@ -6,9 +6,7 @@
   "scripts": {
     "start": "electron . --disable-gpu",
     "build": "electron-builder",
-    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
-    "dev:renderer": "cd src && npm start",
-    "dev:main": "electron-builder --dir"
+    "dev": "npm start"
   },
   "keywords": [
     "prayer",
@@ -19,7 +17,7 @@
   ],
   "author": {
     "name": "fauziwig",
-    "email": "fauziwig@users.noreply.github.com"
+    "email": "fauziwig@gmail.com"
   },
   "license": "MIT",
   "devDependencies": {
